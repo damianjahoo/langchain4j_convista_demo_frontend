@@ -1,0 +1,73 @@
+<html>
+<head>
+	<title>Chat WebSocket</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="stylesheet" href="styles.css">
+
+	<script src="sockjs-0.3.4.js"></script>
+	<script src="stomp.js"></script>
+
+	<script type="text/javascript">
+		var stompClient = null;
+
+		function connect() {
+			var socket = new SockJS('http://127.0.0.1:8080/chat');
+			stompClient = Stomp.over(socket);
+
+			stompClient.connect({}, function (frame) {
+				console.log('Connected: ' + frame);
+				stompClient.subscribe('/user/queue/reply', function (messageOutput) {
+					displayMessage(messageOutput.body, "bot");
+				});
+			});
+		}
+
+		function sendMessage() {
+			const inputField = document.getElementById('user-input');
+			const userMessage = inputField.value;
+
+			if (userMessage.trim() === "") return;
+			displayMessage(userMessage, 'user');
+			stompClient.send('/app/chat', {}, userMessage);
+			inputField.value = "";
+			scrollChatToBottom();
+		}
+
+		function displayMessage(message, sender) {
+			const chatBody = document.getElementById('chat-body');
+			const messageElement = document.createElement('div');
+			messageElement.classList.add('message', sender);
+			messageElement.textContent = message;
+			chatBody.appendChild(messageElement);
+		}
+
+		function scrollChatToBottom() {
+			const chatBody = document.getElementById('chat-body');
+			chatBody.scrollTop = chatBody.scrollHeight;
+		}
+
+		function checkEnter(event) {
+			if (event.key === "Enter") {
+				sendMessage();
+			}
+		}
+	</script>
+
+</head>
+
+<body onload="connect()">
+	<div class="chat-box" id="chat-box">
+		<div class="chat-header">
+			<h4>Chat with Bot</h4>
+		</div>
+		<div class="chat-body" id="chat-body"></div>
+		<div class="chat-footer">
+			<input type="text" id="user-input" placeholder="Type a message" onkeypress="checkEnter(event)">
+			<button onclick="sendMessage()">Send</button>
+		</div>
+	</div>
+
+</body>
+</html>
